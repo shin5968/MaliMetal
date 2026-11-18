@@ -103,7 +103,10 @@ if [ "$(uname -s)" = Darwin ]; then
 fi
 # shellcheck disable=SC2086
 run_test test_kmod_api $lifecycle_sources src/backend/native_mali_kmod.cpp \
-    tests/test_kmod_api.cpp $kmod_frameworks
+    src/transport/NativeMaliIokitTransport.cpp tests/test_kmod_api.cpp $kmod_frameworks
+
+run_test test_kmod_geometry $lifecycle_sources src/backend/native_mali_kmod.cpp \
+    src/transport/NativeMaliIokitTransport.cpp tests/test_kmod_geometry.cpp $kmod_frameworks
 
 if [ "$(uname -s)" = Darwin ]; then
     # The Metal frontend is Objective-C++ and needs the target's Metal.framework
