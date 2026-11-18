@@ -60,7 +60,12 @@ int main() {
     expect(untouched(output), "a refused call leaves the output untouched");
 
     /* An output larger than the biggest ABI record is refused before IOKit. */
-    uint8_t big[128] = {};
+    NativeMaliAbiDeviceInfo info = sentinel<NativeMaliAbiDeviceInfo>();
+    expect(transport.call(NativeMaliMethodGetDeviceInfo, nullptr, 0, &info, sizeof(info)) ==
+               kIOReturnNotOpen,
+           "a full device-info record passes argument validation");
+    expect(untouched(info), "a refused device-info query preserves its output");
+    uint8_t big[sizeof(info) + 1] = {};
     expect(transport.call(NativeMaliMethodGetDeviceInfo, nullptr, 0, big, sizeof(big)) ==
                kIOReturnBadArgument,
            "an oversized reply is refused");

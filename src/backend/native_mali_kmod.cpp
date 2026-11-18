@@ -20,6 +20,7 @@
 #include <new>
 
 #if defined(__APPLE__)
+#include "../transport/NativeMaliIokitTransport.h"
 #include <IOKit/IOKitLib.h>
 #include <mach/mach.h>
 #endif
@@ -76,9 +77,8 @@ private:
 int IokitTransportCall(void *context, uint32_t selector, const void *input,
                        size_t input_bytes, void *output, size_t output_bytes) {
     io_connect_t connection = static_cast<io_connect_t>(reinterpret_cast<uintptr_t>(context));
-    size_t size = output_bytes;
-    return IOConnectCallStructMethod(connection, selector, input, input_bytes,
-                                     output, &size);
+    NativeMaliIokitTransport transport(connection);
+    return transport.call(selector, input, input_bytes, output, output_bytes);
 }
 #endif
 
@@ -155,19 +155,22 @@ NativeMaliKmod *native_mali_kmod_create(const NativeMaliTransportCallbacks *tran
 
     /* The ABI refuses IOVA 0, so the allocator starts at the first page-aligned
      * nonzero address inside the reported range. */
-    uint64_t base = info.va_start;
-    if (base % kPageBytes != 0) {
-        base = (base + kPageBytes - 1) & ~(kPageBytes - 1);
-    }
-    if (base == 0) {
-        base = kPageBytes;
-    }
-    if (info.va_size <= kPageBytes || base - info.va_start >= info.va_size) {
+    if (info.pgsize_shift != NativeMaliAbiPageShift ||
+        info.va_size > UINT64_MAX - info.va_start) {
         delete kmod;
         *error = NATIVE_MALI_RESULT_UNSUPPORTED;
         return nullptr;
     }
-    const uint64_t size = info.va_size - (base - info.va_start);
+    const uint64_t end = info.va_start + info.va_size;
+    const uint64_t first = info.va_start == 0 ? kPageBytes : info.va_start;
+    const uint64_t padding = (0 - first) & (kPageBytes - 1);
+    if (first >= end || padding >= end - first) {
+        delete kmod;
+        *error = NATIVE_MALI_RESULT_UNSUPPORTED;
+        return nullptr;
+    }
+    const uint64_t base = first + padding;
+    const uint64_t size = (end - base) & ~(kPageBytes - 1);
 
     /* Rebuild the object with the real range. The first one only held the
      * transport and client, so nothing leaks. */

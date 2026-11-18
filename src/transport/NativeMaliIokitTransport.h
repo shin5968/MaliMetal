@@ -29,6 +29,7 @@
 #include <IOKit/IOKitLib.h>
 
 #include "NativeMaliTransport.h"
+#include "NativeMaliABI.h"
 
 class NativeMaliIokitTransport final : public NativeMaliTransport {
 public:
@@ -45,8 +46,8 @@ public:
 
     bool connected() const { return connection_ != IO_OBJECT_NULL; }
 
-    /* The largest record in NativeMaliABI.h is 64 bytes (GetDeviceInfo). */
-    static constexpr size_t kMaxRecordBytes = 64;
+    /* Keep the reply buffer in step with the pinned GetDeviceInfo ABI. */
+    static constexpr size_t kMaxRecordBytes = sizeof(NativeMaliAbiDeviceInfo);
 
 private:
     io_connect_t connection_;

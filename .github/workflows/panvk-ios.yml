@@ -113,6 +113,7 @@ jobs:
             -Ibuild/abi -Isrc -Isrc/backend -Isrc/native_mali -Isrc/transport \
             -dynamiclib \
             src/backend/native_mali_kmod.cpp \
+            src/transport/NativeMaliIokitTransport.cpp \
             src/native_mali/NativeMaliAbiTable.cpp \
             src/native_mali/NativeMaliClient.cpp \
             src/native_mali/NativeMaliError.cpp \
